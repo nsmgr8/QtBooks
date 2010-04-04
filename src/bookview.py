@@ -1,14 +1,18 @@
+import webbrowser
+
 from PyQt4.QtGui import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout,
-                         QListWidget, QLabel, QSplitter)
-from PyQt4.QtWebKit import QWebView
+                         QListWidget, QLabel, QSplitter, QMessageBox,
+                         QProgressDialog)
+from PyQt4.QtWebKit import QWebView, QWebPage
 from PyQt4.QtCore import SIGNAL
 
-from feedbooks import Book
+from feedbooks import Book, FeedBooks
+from library import insert_library
 
 class BookView(QSplitter):
 
-    def __init__(self):
-        super(BookView, self).__init__()
+    def __init__(self, parent=None):
+        super(BookView, self).__init__(parent=parent)
 
         self.create_layout()
         self.create_connections()
@@ -51,6 +55,11 @@ class BookView(QSplitter):
         self.connect(self.chapter_list, SIGNAL("currentRowChanged(int)"),
                      self.set_chapter)
 
+        page = self.web_view.page()
+        page.setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
+        self.connect(page, SIGNAL("linkClicked(const QUrl&)"),
+                     self.link_clicked)
+
     def load_book(self, book_id):
         self.book = Book(book_id)
         self.chapter_list.clear()
@@ -66,4 +75,27 @@ class BookView(QSplitter):
         elif num >= len(self.book.chapters):
             num = 0
         self.web_view.setHtml(self.book.get_chapter(num))
+
+    def link_clicked(self, url):
+        surl = str(url.toString())
+        if surl.endswith('.epub'):
+            progress = QProgressDialog("Downloding the book...", "Abort", 0, -1,
+                                       self)
+            progress.show()
+            book_id = FeedBooks().download(surl[:-5])
+            progress.close()
+            if not book_id:
+                QMessageBox.critical(self, 'Error', 'Could not download the '
+                                     'book')
+            elif book_id != -1:
+                book = Book(book_id)
+                insert_library(book)
+                self.parent().library.refresh()
+            else:
+                book_id = surl[surl.rfind('/')+1:-5]
+
+            if book_id:
+                self.load_book(book_id)
+        else:
+            webbrowser.open_new_tab(surl)
 

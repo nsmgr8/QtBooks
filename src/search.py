@@ -5,17 +5,14 @@ from PyQt4.QtGui import (QDialog, QLabel, QLineEdit, QPushButton, QHBoxLayout,
                          QProgressDialog, QMessageBox)
 from PyQt4.QtCore import SIGNAL, Qt
 
-import json
 
 from feedbooks import FeedBooks, Book
-from library import get_library
-from conf import LIBRARY
+from library import insert_library
 
 class Search(QDialog):
 
-    def __init__(self, parent=None, lib_view=None):
+    def __init__(self, parent=None):
         super(Search, self).__init__(parent=parent)
-        self.lib_view = lib_view
 
         self.create_layout()
         self.create_connections()
@@ -93,19 +90,14 @@ class Search(QDialog):
                 QMessageBox.critical(self, 'Error', 'Could not download the '
                                      'book')
             elif book_id != -1:
-                library = get_library() or {'books': []}
                 book = Book(book_id)
-                book.open()
-                library['books'].append({'id': book.id, 'title': book.title,
-                                         'authors': book.authors})
-                with open(LIBRARY, 'w') as f:
-                    json.dump(library, f, indent=4)
+                insert_library(book)
 
             if progress.wasCanceled():
                 break
 
         progress.setValue(rows)
         progress.close()
-        self.lib_view.refresh()
+        self.parent().library.refresh()
 
 

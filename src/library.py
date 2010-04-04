@@ -14,6 +14,14 @@ def get_library():
             library = {'books': []}
     return library
 
+def insert_library(book):
+    lib = get_library()
+    book.open()
+    lib['books'].append({'id': book.id, 'title': book.title,
+                             'authors': book.authors})
+    with open(LIBRARY, 'w') as f:
+        json.dump(lib, f, indent=4)
+
 class Library(QTableWidget):
 
     def __init__(self, book_view, parent=None):

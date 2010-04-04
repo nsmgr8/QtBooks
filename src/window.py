@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
         self.create_connections()
 
     def create_layout(self):
-        self.book = BookView()
+        self.book = BookView(self)
         self.setCentralWidget(self.book)
 
         self.create_library_dock()
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, 'Help', 'Nothing yet!')
 
     def search(self):
-        search = Search(self, self.library)
+        search = Search(self)
         search.show()
 
 
