@@ -14,7 +14,7 @@ class FeedBooks(object):
 
     def search(self, query):
         data = urllib.urlencode({'query': query})
-        request = urllib2.Request(FEEDBOOKS + 'books/search.json', data)
+        request = urllib2.Request(FEEDBOOKS + 'books/search.json?' + data)
         try:
             response = urllib2.urlopen(request)
             return json.load(response)
@@ -23,6 +23,8 @@ class FeedBooks(object):
             return None
 
     def download(self, url, format='epub'):
+        s = url.split('/')
+        url = '/'.join(s[:-1])
         book_id = url[url.rfind('/')+1:]
 
         if not os.path.exists(LIBRARY_DIR):
@@ -34,7 +36,8 @@ class FeedBooks(object):
             return -1
 
         try:
-            response = urllib2.urlopen(url+'.'+format)
+            request = urllib2.Request(url+'.'+format)
+            response = urllib2.urlopen(request)
             with open(book_file, 'w') as f:
                 f.write(response.read())
             return book_id
@@ -69,11 +72,11 @@ class Book(object):
         ncx = self.folder + ncx['href']
 
         s = BeautifulStoneSoup(self.f.read(ncx))
-        self.title = s.doctitle.text.contents[0]
+        self.title = s.doctitle.text
         self.authors = [auth.contents[0] for auth in
                         s.docauthor.findAll('text')]
 
-        self.chapters = [(nav.navlabel.text.contents[0], nav.content['src']) for
+        self.chapters = [(nav.navlabel.text, nav.content['src']) for
                          nav in s.findAll('navmap')[0].findAll('navpoint')]
 
     def get_chapter(self, num):
